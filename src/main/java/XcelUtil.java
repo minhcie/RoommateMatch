@@ -64,8 +64,15 @@ public class XcelUtil {
                 cellValue = getCellValue(cell);
 
                 if (cellValue == null || cellValue.length() <= 0) {
-                    // Ignore empty cell.
-                    continue;
+                    if (colIndex == 8) { // DoB.
+                        // Do not add client to the map if DoB is null.
+                        roommate.clientUid = null;
+                        break;
+                    }
+                    else {
+                        // Ignore empty cell.
+                        continue;
+                    }
                 }
                 else if (colIndex > 20) {
                     // Done with this row.
@@ -143,7 +150,7 @@ public class XcelUtil {
 
             // Save roommate data.
             if (roommate.clientUid != null && !roommateMap.containsKey(roommate.clientUid)) {
-                log.debug("insert client " + roommate.clientUid + " into roommateMap");
+                log.debug("adding client " + roommate.clientUid + " into roommateMap");
                 roommateMap.put(roommate.clientUid, roommate);
             }
         }

@@ -69,13 +69,15 @@ public class RoommateMatch {
             }
             log.info("Total " + roommateList.size() + " clients found...\n");
 
-            // Load data into both ETO and CIE.
+            // Load matching data (criterias) into both ETO and CIE.
             for (int i = 0; i < roommateList.size(); i++) {
                 RoommateData data = roommateList.get(i);
                 addRoommateData(conn, auth, data);
             }
 
-            // Calculate matching score for each client in the list.
+            // Calculate matching score for each client in the list.  This step
+            // requires all matching criterias for each client are added from
+            // the above.
             for (int i = 0; i < roommateList.size(); i++) {
                 RoommateData data = roommateList.get(i);
                 calculateMatchingScores(conn, data);
@@ -109,11 +111,11 @@ public class RoommateMatch {
             input.put("LastName", data.lastName);
 
             long genderId = 6; // Unknown.
-            if (data.gender.equalsIgnoreCase("Female")) {
+            if (data.gender != null && data.gender.equalsIgnoreCase("Female")) {
                 input.put("Gender", new Integer(1));
                 genderId = 1;
             }
-            else if (data.gender.equalsIgnoreCase("Male")) {
+            else if (data.gender != null && data.gender.equalsIgnoreCase("Male")) {
                 input.put("Gender", new Integer(0));
                 genderId = 2;
             }
@@ -144,10 +146,10 @@ public class RoommateMatch {
             JSONObject cust = new JSONObject();
             cust.put("CDID", new Integer(3758)); // Gender (HUD).
             cust.put("CharacteristicType", new Integer(4));
-            if (data.gender.equalsIgnoreCase("Female")) {
+            if (data.gender != null && data.gender.equalsIgnoreCase("Female")) {
                 cust.put("value", new Integer(8952));
             }
-            else if (data.gender.equalsIgnoreCase("Male")) {
+            else if (data.gender != null && data.gender.equalsIgnoreCase("Male")) {
                 cust.put("value", new Integer(8953));
             }
             else {
@@ -424,7 +426,7 @@ public class RoommateMatch {
     }
 
     private static void calculateMatchingScores(Connection conn, RoommateData data) throws Exception {
-        String clientName = data.firstName + " " + data.lastName;
+        String clientName = data.firstName + " " + data.lastName.charAt(0);
         log.info("Calculating roommate matching score for " + clientName);
         List<DbRoommate> results = DbRoommate.findAll(conn);
         if (results == null || results.size() <= 0) {
@@ -513,15 +515,20 @@ public class RoommateMatch {
         Collections.sort(roommateScores);
 
         // Send email notification to generic case manager.
+        /*
         int etoProgramId = TouchPointUtil.getAlphaProgramId("home-finder");
         DbGenericCaseManager caseMgr = DbGenericCaseManager.findByProgram(conn, etoProgramId);
         if (caseMgr != null) {
-            sendEmail(caseMgr.email, clientName, roommateScores);
-            //sendEmail("mtran@211sandiego.org", clientName, roommateScores);
+            //sendEmail(caseMgr.email, clientName, roommateScores);
+            //sendEmail("homefinder@alphaproject.org", clientName, roommateScores);
         }
         else {
             log.info("Generic case manager not found!");
         }
+        */
+
+        // Send an email to DataImport to forward to homefinder@alphaproject.org
+        sendEmail("DataImport@211sandiego.org", clientName, roommateScores);
     }
 
     private static void sendEmail(String mgrEmailAddr, String clientName,
@@ -556,6 +563,7 @@ public class RoommateMatch {
         // Config email properties (Non-SSL).
         Properties props = new Properties();
         props.put("mail.smtp.host", "mail.211sandiego.org");
+        //props.put("mail.smtp.host", "211-ex02.infoline.com");
         props.put("mail.smtp.auth", "true");
         props.put("mail.debug", "true");
         //props.put("mail.smtp.starttls.enable", "true");
@@ -581,7 +589,7 @@ public class RoommateMatch {
         mail.setFrom(new InternetAddress("DataImport@211sandiego.org"));
         mail.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mgrEmailAddr));
         mail.setSentDate(new Date());
-        mail.setSubject("Home Finder - " + clientName);
+        mail.setSubject("Home Finder Alert");
 
         // Email body.
         //mail.setText(msg.toString()); // Plain text message.

@@ -276,7 +276,8 @@ public class TouchPointUtil {
         }
 
         // Have current monthly income?
-        if (data.monthlyIncomeAmount.length() > 0 || data.incomeSource.length() > 0) {
+        if ((data.monthlyIncomeAmount != null && data.monthlyIncomeAmount.length() > 0) ||
+            (data.incomeSource != null && data.incomeSource.length() > 0)) {
             respElements.add(createYesNoElement(true, 818, 1290, 1291));
         }
 
